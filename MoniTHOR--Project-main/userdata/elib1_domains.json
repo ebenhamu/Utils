@@ -1,0 +1,92 @@
+[
+    {
+        "domain": "github.com",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "googletagmanager.com",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "play.google.com",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "apple.com",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "youtube.com",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "microsoft.com",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "youtu.be",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "facebook.com",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "instagram.com",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "wikipedia.org",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "linkedin.com",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "en.wikipedia.org",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "twitter.com",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "wordpress.org",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    },
+    {
+        "domain": "google.com",
+        "status_code": "OK",
+        "ssl_expiration": "failed",
+        "ssl_Issuer": "[SSL: CERTIFICATE_VERIFY_FAILE"
+    }
+]

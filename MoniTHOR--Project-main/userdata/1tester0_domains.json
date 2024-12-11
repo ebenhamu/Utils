@@ -1,0 +1,8 @@
+[
+    {
+        "domain": "google.com",
+        "status_code": "FAILED",
+        "ssl_expiration": "FAILED",
+        "ssl_Issuer": "FAILED"
+    }
+]

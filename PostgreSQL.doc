@@ -1,0 +1,235 @@
+Objectives: 
+-Set Up PostgreSQL in Docker with Persistent Storage
+-Create a Database and tables
+-Insert mock data
+-Manage Orders via Python Script
+
+
+
+
+
+1. Set Up PostgreSQL in Docker with Persistent Storage (Bind Mount)
+Step 1.1: Create a Local Directory for PostgreSQL Data
+mkdir -p ~/postgres_data
+
+Step 1.2: Set Proper Permissions
+Make sure PostgreSQL has permission to write to the directory:
+sudo chown -R 999:999 ~/postgres_data
+( 999:999 is the default UID:GID used by PostgreSQL inside the official Docker container. )
+Step 1.3: Run PostgreSQL in Docker
+docker run -d \
+  --name my_postgres_db \
+  -e POSTGRES_USER=myuser \
+  -e POSTGRES_PASSWORD=mypassword \
+  -e POSTGRES_DB=storedb \
+  -v ~/postgres_data:/var/lib/postgresql/data \
+  -p 5432:5432 \
+  postgres:1
+
+
+
+
+
+
+
+2. SQL Script to Set Up Database and Tables
+Step 2.1: Create the SQL File init_db.sql
+-- Create tables
+CREATE TABLE IF NOT EXISTS users (
+    user_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    email VARCHAR(100) UNIQUE,
+    address TEXT,
+    phone_number VARCHAR(20)
+);
+
+CREATE TABLE IF NOT EXISTS products (
+    product_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    price NUMERIC(10, 2),
+    is_kosher BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+    order_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(user_id),
+    product_id INT REFERENCES products(product_id),
+    quantity INT,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert mock users
+INSERT INTO users (first_name, last_name, email, address, phone_number) VALUES
+('David', 'Goldman', 'david@example.com', '123 Jerusalem St.', '123-456-7890'),
+('Sarah', 'Levy', 'sarah@example.com', '456 Tel Aviv Blvd.', '987-654-3210'),
+('Michael', 'Cohen', 'michael@example.com', '789 Haifa Ave.', '555-444-3333'),
+('Rachel', 'Friedman', 'rachel@example.com', '101 Beersheba Rd.', '222-333-4444'),
+('Yossi', 'Ben-David', 'yossi@example.com', '321 Eilat Way.', '666-777-8888');
+
+-- Insert mock kosher products
+INSERT INTO products (name, price, is_kosher) VALUES
+('Kosher Bread', 5.50, TRUE),
+('Kosher Cheese', 8.00, TRUE),
+('Kosher Chicken', 15.99, TRUE),
+('Kosher Wine', 25.00, TRUE),
+('Kosher Milk', 4.20, TRUE),
+('Kosher Beef', 20.50, TRUE),
+('Kosher Yogurt', 3.75, TRUE),
+('Kosher Eggs', 2.50, TRUE),
+('Kosher Chocolate', 6.80, TRUE),
+('Kosher Honey', 9.30, TRUE);
+
+
+Step 2.2: Execute the SQL Script Inside Docker
+Copy the SQL file into the container:
+docker cp init_db.sql my_postgres_db:/init_db.sql
+
+Run the script:
+docker exec -it my_postgres_db psql -U myuser -d storedb -f /init_db.sql
+
+
+
+
+
+
+
+
+
+
+
+
+3. Python Script to Update Orders and Display User Spending
+Step 3.1: Install Dependencies
+Install psycopg2:
+pip install psycopg2 argparse
+
+Step 3.2: Create the Python Script update_orders.py
+
+import psycopg2
+import argparse
+
+# Database connection parameters
+DB_PARAMS = {
+    'dbname': 'storedb',
+    'user': 'myuser',
+    'password': 'mypassword',
+    'host': 'localhost',
+    'port': 5432
+}
+
+# Function to connect to the database
+def connect_db():
+    return psycopg2.connect(**DB_PARAMS)
+
+# Add an order for a user
+def add_order(username, product_name, quantity):
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+
+        # Get user_id from users table
+        cur.execute("SELECT user_id FROM users WHERE email = %s;", (username,))
+        user = cur.fetchone()
+        if not user:
+            print(f"User '{username}' not found.")
+            return
+        user_id = user[0]
+
+        # Get product_id from products table
+        cur.execute("SELECT product_id FROM products WHERE name = %s;", (product_name,))
+        product = cur.fetchone()
+        if not product:
+            print(f"Product '{product_name}' not found.")
+            return
+        product_id = product[0]
+
+        # Insert order into orders table
+        cur.execute(
+            "INSERT INTO orders (user_id, product_id, quantity) VALUES (%s, %s, %s);",
+            (user_id, product_id, quantity)
+        )
+        conn.commit()
+        print(f"Order placed for {quantity}x '{product_name}' by {username}.")
+
+    except Exception as e:
+        print("An error occurred:", e)
+        conn.rollback()
+    finally:
+        cur.close()
+        conn.close()
+
+# Show how much each user spent
+def show_total_spent():
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT u.first_name || ' ' || u.last_name AS user_name, SUM(o.quantity * p.price) AS total_spent
+            FROM orders o
+            JOIN users u ON o.user_id = u.user_id
+            JOIN products p ON o.product_id = p.product_id
+            GROUP BY u.first_name, u.last_name
+            ORDER BY total_spent DESC;
+        """)
+        results = cur.fetchall()
+
+        print("\nCustomer Spending Summary:")
+        print("-----------------------------------------")
+        for user_name, total in results:
+            print(f"{user_name}: ${total:.2f}")
+
+    except Exception as e:
+        print("An error occurred:", e)
+    finally:
+        cur.close()
+        conn.close()
+
+# Argument parsing
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Manage Orders for the StoreDB")
+    parser.add_argument('--user', type=str, help="User's email for the order")
+    parser.add_argument('--product', type=str, help="Product name to order")
+    parser.add_argument('--quantity', type=int, help="Quantity of the product")
+    parser.add_argument('--show-spending', action='store_true', help="Display how much each customer spent")
+
+    args = parser.parse_args()
+
+    if args.user and args.product and args.quantity:
+        add_order(args.user, args.product, args.quantity)
+    elif args.show_spending:
+        show_total_spent()
+    else:
+        parser.print_help()
+
+
+
+
+4. Usage Examples
+4.1. Add Orders
+python update_orders.py --user david@example.com --product "Kosher Wine" --quantity 2
+
+4.2. Show Customer Spending
+python update_orders.py --show-spending
+
+Example Output:
+Customer Spending Summary:
+-----------------------------------------
+David Goldman: $50.00
+Sarah Levy: $32.50
+Michael Cohen: $25.00
+
+
+
+
+
+5. Add the following functionality to the script:
+
+Search for Users by Name
+	python update_orders.py --search dav
+
+Expected Output:
+	Customer Matching ‘dav’:
+-----------------------------------------
+David Goldman
+Yossi Ben-David
